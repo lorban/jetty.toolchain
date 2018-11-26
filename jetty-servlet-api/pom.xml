@@ -9,11 +9,12 @@
   <groupId>org.eclipse.jetty.toolchain</groupId>
   <artifactId>jetty-osgi-servlet-api</artifactId>
   <version>3.1-SNAPSHOT</version>
-  <name>Jetty :: Servlet API and Schemas for OSGi </name>
+  <name>Jetty :: Servlet API and Schemas for JPMS and OSGi</name>
   <packaging>jar</packaging>
   <properties>
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
+
   <scm>
       <connection>scm:git:http://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.toolchain.git</connection>
       <developerConnection>scm:git:ssh://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.toolchain.git</developerConnection>
@@ -231,7 +232,7 @@
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-schemas</artifactId>
-      <version>3.1.M0</version>
+      <version>3.1.2</version>
     </dependency>
   </dependencies>
 </project>
