@@ -41,7 +41,21 @@ public class Passwd
     private String _pwGecos; /* real name */
     private String _pwDir; /* home directory */
     private String _pwShell; /* shell program */
-    
+
+    public Passwd()
+    {
+    }
+
+    Passwd(String _pwName, String _pwPasswd, int _pwUid, int _pwGid, String _pwGecos, String _pwDir, String _pwShell)
+    {
+        this._pwName = _pwName;
+        this._pwPasswd = _pwPasswd;
+        this._pwUid = _pwUid;
+        this._pwGid = _pwGid;
+        this._pwGecos = _pwGecos;
+        this._pwDir = _pwDir;
+        this._pwShell = _pwShell;
+    }
 
     public String getPwName()
     {

@@ -35,8 +35,18 @@ public class Group
     private String _grPasswd; /* group password */
     private int _grGid; /* group id */
     private String[] _grMem; /* group members */
-    
-    
+
+    public Group()
+    {
+    }
+
+    Group(String grName, String grPasswd, int grGid, String[] grMem)
+    {
+        _grName = grName;
+        _grPasswd = grPasswd;
+        _grGid = grGid;
+        _grMem = grMem;
+    }
 
     public String getGrName()
     {

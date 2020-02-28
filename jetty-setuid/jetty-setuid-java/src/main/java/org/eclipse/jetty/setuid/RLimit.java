@@ -23,7 +23,16 @@ public class RLimit
     int _soft;
     int _hard;
 
-    
+    public RLimit()
+    {
+    }
+
+    RLimit(int _soft, int _hard)
+    {
+        this._soft = _soft;
+        this._hard = _hard;
+    }
+
     public int getSoft ()
     {
         return _soft;

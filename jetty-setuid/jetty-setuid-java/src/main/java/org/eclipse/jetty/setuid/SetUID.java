@@ -18,12 +18,14 @@
 
 package org.eclipse.jetty.setuid;
 
-import java.io.File;
-import java.io.FilenameFilter;
+import java.util.Arrays;
+import java.util.List;
 
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import com.sun.jna.Library;
+import com.sun.jna.Native;
+import com.sun.jna.Platform;
+import com.sun.jna.Pointer;
+import com.sun.jna.Structure;
 
 /**
  * Class is for changing user and groupId, it can also be use to retrieve user information by using getpwuid(uid) or getpwnam(username) of both linux and unix
@@ -32,191 +34,132 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class SetUID
 {
-    private static final Logger LOG = Log.getLogger(SetUID.class);
-
-    public static final String __FILENAME = "libsetuid";
-
-    public static final int OK = 0;
-    public static final int ERROR = -1;
-
-    public static native int setumask(int mask);
-
-    public static native int setuid(int uid);
-
-    public static native int setgid(int gid);
-
-    public static native int setgroups(int[] gids);
-
-    public static native Passwd getpwnam(String name) throws SecurityException;
-
-    public static native Passwd getpwuid(int uid) throws SecurityException;
-
-    public static native Group getgrnam(String name) throws SecurityException;
-
-    public static native Group getgrgid(int gid) throws SecurityException;
-
-    public static native RLimit getrlimitnofiles();
-
-    public static native int setrlimitnofiles(RLimit rlimit);
-
-    private static class LibFilenameFilter implements FilenameFilter
-    {
-        public boolean accept(File dir, String name)
-        {
-            if (name.toLowerCase().contains(__FILENAME))
-                return true;
-
-            return false;
-        }
+    public static int setumask(int mask){
+        return LibC.INSTANCE.setumask(mask);
     }
 
-    private static void loadLibrary()
-    {
-        // try loading file from ${jetty.libsetuid.path}
-        try
-        {
-            if (System.getProperty("jetty.libsetuid.path") != null)
-            {
-                LOG.debug("System.loadLibrary(jetty.libsetuid.path)");
-
-                File lib = new File(System.getProperty("jetty.libsetuid.path"));
-                if (lib.exists())
-                {
-                    System.load(lib.getCanonicalPath());
-                }
-                return;
-            }
-
-        }
-        catch (Throwable e)
-        {
-            // Ignorable if there is another way to find the lib
-            LOG.debug(e);
-        }
-
-        // try loading using the platform native library name mapping
-        try
-        {
-            LOG.debug("System.loadLibrary(setuid)");
-            System.loadLibrary("setuid");
-            return;
-        }
-        catch (Throwable e)
-        {
-            // Ignorable if there is another way to find the lib
-            LOG.debug(e);
-        }
-
-        // try loading using well-known path
-        try
-        {
-            if (System.getProperty("jetty.home") != null)
-            {
-                File lib = getLib(new File(System.getProperty("jetty.home"),"lib/setuid/"));
-
-                if (lib != null && lib.exists())
-                {
-                    LOG.debug("System.load((jetty.home)lib.getCanonicalPath()");
-
-                    System.load(lib.getCanonicalPath());
-                }
-                return;
-            }
-
-        }
-        catch (Throwable e)
-        {
-            LOG.debug(e);
-        }
-
-        // try to load from jetty.lib where rpm puts this file
-        try
-        {
-            if (System.getProperty("jetty.lib") != null)
-            {
-                File lib = getLib(new File(System.getProperty("jetty.lib")));
-
-                LOG.debug("looking for {}",lib.getAbsolutePath());
-                if (lib != null && lib.exists())
-                {
-                    LOG.debug("System.load((jetty.lib)lib.getCanonicalPath())");
-                    System.load(lib.getCanonicalPath());
-                }
-                return;
-            }
-
-        }
-        catch (Throwable e)
-        {
-            LOG.debug(e);
-        }
-
-        LOG.warn("Error: libsetuid.so could not be found");
+    public static int setuid(int uid){
+        return LibC.INSTANCE.setuid(uid);
     }
 
-    private static File getLib(File dir)
-    {
-        File[] files = dir.listFiles(new LibFilenameFilter());
-        if (files == null || files.length == 0)
+    public static int setgid(int gid){
+        return LibC.INSTANCE.setgid(gid);
+    }
+
+    public static int setgroups(int[] gids){
+        return LibC.INSTANCE.setgroups(gids.length, gids);
+    }
+
+    public static Passwd getpwnam(String name) throws SecurityException{
+        passwd ptr = LibC.INSTANCE.getpwnam(name);
+        if (ptr == null)
             return null;
-
-        File file = null;
-        String osName = getOSName();
-
-        for (File f : files)
-        {
-            if (f.getName().endsWith(Server.getVersion() + ".so"))
-            {
-                file = f;
-                break;
-            }
-
-            if (f.getName().endsWith(osName + ".so"))
-            {
-                LOG.debug("OS specific file found: {}",f.getName());
-
-                file = f;
-                break;
-            }
-        }
-
-        if (file == null)
-        {
-            file = files[0]; // couldn't get a match on version number, just pick first
-
-            LOG.debug("Defaulting to first file: {}",file.getName());
-
-        }
-
-        LOG.debug("setuid library {}",file.getName());
-
-        return file;
+        return new Passwd(ptr.pw_name, ptr.pw_passwd, ptr.pw_uid, ptr.pw_gid, ptr.pw_gecos, ptr.pw_dir, ptr.pw_shell);
     }
 
-    private static File getLib(String dir)
+    public static Passwd getpwuid(int uid) throws SecurityException{
+        passwd ptr = LibC.INSTANCE.getpwuid(uid);
+        if (ptr == null)
+            return null;
+        return new Passwd(ptr.pw_name, ptr.pw_passwd, ptr.pw_uid, ptr.pw_gid, ptr.pw_gecos, ptr.pw_dir, ptr.pw_shell);
+    }
+
+    public static Group getgrnam(String name) throws SecurityException{
+        group ptr = LibC.INSTANCE.getgrnam(name);
+        if (ptr == null)
+            return null;
+        return new Group(ptr.gr_name, ptr.gr_passwd, ptr.gr_gid, ptr.gr_mem.getStringArray(0));
+    }
+
+    public static Group getgrgid(int gid) throws SecurityException{
+        group ptr = LibC.INSTANCE.getgrgid(gid);
+        if (ptr == null)
+            return null;
+        return new Group(ptr.gr_name, ptr.gr_passwd, ptr.gr_gid, ptr.gr_mem.getStringArray(0));
+    }
+
+    public static RLimit getrlimitnofiles(){
+        rlimit rlim = new rlimit();
+        int rc = LibC.INSTANCE.getrlimit(LibC.RLIMIT_NOFILE, rlim);
+        if (rc == -1)
+            return null;
+        return new RLimit(rlim.rlim_cur, rlim.rlim_max);
+    }
+
+    public static int setrlimitnofiles(RLimit rlimit) {
+        rlimit rlim = new rlimit();
+        rlim.rlim_cur = rlimit._soft;
+        rlim.rlim_max = rlimit._hard;
+        return LibC.INSTANCE.setrlimit(LibC.RLIMIT_NOFILE, rlim);
+    }
+
+
+    private interface LibC extends Library
     {
-        return getLib(new File(dir));
+        LibC INSTANCE = Native.load((Platform.isWindows() ? "msvcrt" : "c"), LibC.class);
+
+        int setumask(int mask);
+
+        int setuid(int uid);
+
+        int setgid(int gid);
+
+        int setgroups(int size, int[] gids);
+
+        passwd getpwnam(String name);
+
+        passwd getpwuid(int uid);
+
+        group getgrnam(String name);
+
+        group getgrgid(int gid);
+
+        int RLIMIT_NOFILE = 7;       /* max number of open files */
+
+        int getrlimit(int resource, rlimit rlim);
+
+        int setrlimit(int resource, rlimit rlim);
     }
 
-    private static String getOSName()
+    public static class passwd extends Structure
     {
-        String os = System.getProperty("os.name");
+        public String pw_name;
+        public String pw_passwd;
+        public int pw_uid;
+        public int pw_gid;
+        public String pw_gecos;
+        public String pw_dir;
+        public String pw_shell;
 
-        if ("Mac OS X".equals(os))
-        {
-            return "osx";
+        @Override
+        protected List<String> getFieldOrder() {
+            return Arrays.asList("pw_name", "pw_passwd", "pw_uid", "pw_gid", "pw_gecos", "pw_dir", "pw_shell");
         }
-        else if ("Linux".equals(os) || "LINUX".equals(os))
-        {
-            return "linux";
-        }
-
-        return null;
     }
 
-    static
+    public static class group extends Structure
     {
-        loadLibrary();
+        public String gr_name;
+        public String gr_passwd;
+        public int gr_gid;
+        public Pointer gr_mem;
+
+        @Override
+        protected List<String> getFieldOrder()
+        {
+            return Arrays.asList("gr_name", "gr_passwd", "gr_gid", "gr_mem");
+        }
     }
 
+    public static class rlimit extends Structure
+    {
+        public int rlim_cur;
+        public int rlim_max;
+
+        @Override
+        protected List<String> getFieldOrder()
+        {
+            return Arrays.asList("rlim_cur", "rlim_max");
+        }
+    }
 }

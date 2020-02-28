@@ -22,12 +22,40 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.util.Arrays;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Test;
 
 public class TestSetuid
 {
+    @Test
+    public void testGetpwnam()
+    {
+        Passwd pw = SetUID.getpwnam("lorban");
+        System.out.println("pwdir="+pw.getPwDir());
+    }
+
+    @Test
+    public void testGetrlimit()
+    {
+        RLimit rLimit = SetUID.getrlimitnofiles();
+        System.out.println(rLimit);
+    }
+
+    @Test
+    public void testGetgrnam()
+    {
+        Group group = SetUID.getgrnam("sudo");
+        System.out.println(Arrays.toString(group.getGrMem()));
+    }
+
+    @Test
+    public void testGetgrgid()
+    {
+        Group group = SetUID.getgrgid(0);
+        System.out.println(group.getGrName());
+    }
 
     @Test
     public void testSetuid() throws Exception
